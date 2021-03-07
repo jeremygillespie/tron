@@ -19,6 +19,8 @@ class state:
         self.turn = 1
         self.land_plays = 1
         self.tron = False
+        self.deck_size = 60
+
         self.deck = deck
         self.top = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.bottom = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -34,11 +36,6 @@ class state:
             self.deck[i] += x
             self.bottom[i] = 0
 
-    def __ancient_done(self):
-        for x, i in self.top:
-            self.bottom[i] += x
-            self.top[i] = 0
-
     def __check_tron(self):
         if self.play[mine] and self.play[plant] and self.play[tower]:
             self.tron = True
@@ -52,47 +49,29 @@ class state:
             self.tapped[i] = 0
         self.__draw()
 
-    def play_mine(self):
-        if self.land_plays == 0 or self.hand[mine] == 0:
+    def play_land(self, card):
+        if self.land_plays == 0 or self.hand[card] == 0:
             return False
-        self.hand[mine] -= 1
-        self.play[mine] += 1
+        self.hand[card] -= 1
+        self.play[card] += 1
         self.land_plays -= 1
         self.__check_tron()
         return True
+
+    def play_mine(self):
+        return self.play_land(mine)
 
     def play_plant(self):
-        if self.land_plays == 0 or self.hand[plant] == 0:
-            return False
-        self.hand[plant] -= 1
-        self.play[plant] += 1
-        self.land_plays -= 1
-        return True
+        return self.play_land(plant)
 
     def play_tower(self):
-        if self.land_plays == 0 or self.hand[tower] == 0:
-            return False
-        self.hand[tower] -= 1
-        self.play[tower] += 1
-        self.land_plays -= 1
-        self.__check_tron()
-        return True
+        return self.play_land(tower)
 
     def play_forest(self):
-        if self.land_plays == 0 or self.hand[forest] == 0:
-            return False
-        self.hand[forest] -= 1
-        self.play[forest] += 1
-        self.land_plays -= 1
-        return True
+        return self.play_land(forest)
 
     def play_wastes(self):
-        if self.land_plays == 0 or self.hand[wastes] == 0:
-            return False
-        self.hand[wastes] -= 1
-        self.play[wastes] += 1
-        self.land_plays -= 1
-        return True
+        return self.play_land(wastes)
 
     def tap_mine(self):
         if self.play[mine] == 0:
@@ -144,36 +123,174 @@ class state:
         self.tapped[wastes] += 1
         return True
 
-    def play_sylvan_mine(self):
-        if self.deck[mine] == 0:
+    def play_sylvan(self, card):
+        if self.mana < 2 or self.green == 0:
             return False
-        self.deck[mine] -= 1
-        self.hand[mine] += 1
+        if self.hand[sylvan] == 0:
+            return False
+        if self.deck[card] == 0:
+            return False
+        self.hand[sylvan] -= 1
+        self.mana -= 2
+        self.green -= 1
+        if self.green > self.mana:
+            self.green = self.mana
+        self.deck[card] -= 1
+        self.hand[card] += 1
         self.__shuffle()
         return True
+
+    def play_sylvan_mine(self):
+        return self.play_sylvan(mine)
 
     def play_sylvan_plant(self):
-        if self.deck[plant] == 0:
-            return False
-        self.deck[plant] -= 1
-        self.hand[plant] += 1
-        self.__shuffle()
-        return True
+        return self.play_sylvan(plant)
 
     def play_sylvan_tower(self):
-        if self.deck[tower] == 0:
-            return False
-        self.deck[tower] -= 1
-        self.hand[tower] += 1
-        self.__shuffle()
-        return True
+        return self.play_sylvan(tower)
 
     def play_sylvan_forest(self):
-        if self.deck[forest] == 0:
+        return self.play_sylvan(forest)
+
+    def play_ancient(self):
+        if self.mana == 0 or self.green == 0:
             return False
-        self.deck[forest] -= 1
-        self.deck[forest] += 1
-        self.__shuffle()
+        if self.hand[ancient] == 0:
+            return False
+        self.mana -= 1
+        self.green -= 1
+        self.hand[ancient] -= 1
+        pass
+
+    def choose_ancient(self, card):
+        if self.top[card] == 0:
+            return False
+        self.top[card] -= 1
+        self.hand[card] += 1
+        for x, i in self.top:
+            self.bottom[i] += x
+            self.top[i] = 0
+        return True
+
+    def ancient_mine(self):
+        return self.choose_ancient(mine)
+
+    def ancient_plant(self):
+        return self.choose_ancient(plant)
+
+    def ancient_tower(self):
+        return self.choose_ancient(tower)
+
+    def ancient_forest(self):
+        return self.choose_ancient(forest)
+
+    def ancient_wastes(self):
+        return self.choose_ancient(wastes)
+
+    def ancient_exped(self):
+        return self.choose_ancient(exped)
+
+    def ancient_egg(self):
+        return self.choose_ancient(egg)
+
+    def ancient_relic(self):
+        return self.choose_ancient(relic)
+
+    def ancient_wiff(self):
+        total = 0
+        for x, i in self.top:
+            total += x
+            self.deck[i] += x
+            self.top[i] = 0
+        if total == 0:
+            return False
+        return True
+
+    def play_exped(self):
+        if self.mana == 0:
+            return False
+        if self.hand[exped] == 0:
+            return False
+        self.hand[exped] -= 1
+        self.play[exped] += 1
+        self.mana -= 1
+        if self.green > self.mana:
+            self.green = self.mana
+        return True
+
+    def play_egg(self):
+        if self.mana == 0:
+            return False
+        if self.hand[egg] == 0:
+            return False
+        self.hand[egg] -= 1
+        self.play[egg] += 1
+        self.mana -= 1
+        if self.green > self.mana:
+            self.green = self.mana
+        return True
+
+    def play_relic(self):
+        if self.mana == 0:
+            return False
+        if self.hand[relic] == 0:
+            return False
+        self.hand[relic] -= 1
+        self.play[relic] += 1
+        self.mana -= 1
+        if self.green > self.mana:
+            self.green = self.mana
+        return True
+
+    def crack_exped(self, card):
+        if self.mana < 2:
+            return False
+        if self.play[exped] == 0:
+            return False
+        if self.deck[card] == 0:
+            return False
+        self.play[exped] -= 1
+        self.deck[card] -= 1
+        self.hand[card] += 1
+        self.mana -= 2
+        if self.green > self.mana:
+            self.green = self.mana
+        return True
+
+    def crack_exped_mine(self):
+        return self.crack_exped(mine)
+        
+    def crack_exped_plant(self):
+        return self.crack_exped(plant)
+
+    def crack_exped_tower(self):
+        return self.crack_exped(tower)
+
+    def crack_exped_forest(self):
+        return self.crack_exped(forest)
+
+    def crack_egg(self):
+        if self.mana == 0:
+            return False
+        if self.play[egg] == 0:
+            return False
+        self.play[egg] -= 1
+        self.green += 1
+        if self.green > self.mana:
+            self.green = self.mana
+        self.__draw()
+        return True
+
+    def crack_relic(self):
+        if self.mana == 0:
+            return False
+        if self.play[relic] == 0:
+            return False
+        self.play[relic] -= 1
+        self.mana -= 1
+        if self.green > self.mana:
+            self.green = self.mana
+        self.__draw()
         return True
 
     actions = [
