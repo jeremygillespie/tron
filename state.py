@@ -6,7 +6,7 @@ class cards:
     wastes = 4
     sylvan = 5
     ancient = 6
-    expedition = 7
+    exped = 7
     egg = 8
     relic = 9
     karn = 10
@@ -184,10 +184,10 @@ def play_ancient(state):
 def play_exped(state):
     if state.mana == 0:
         return False
-    if state.hand[cards.expedition] == 0:
+    if state.hand[cards.exped] == 0:
         return False
-    state.hand[cards.expedition] -= 1
-    state.play[cards.expedition] += 1
+    state.hand[cards.exped] -= 1
+    state.play[cards.exped] += 1
     state.mana -= 1
     if state.green > state.mana:
         state.green = state.mana
@@ -220,11 +220,11 @@ def play_relic(state):
 def crack_exped(state, val):
     if state.mana < 2:
         return False
-    if state.play[cards.expedition] == 0:
+    if state.play[cards.exped] == 0:
         return False
     if state.deck[val] == 0:
         return False
-    state.play[cards.expedition] -= 1
+    state.play[cards.exped] -= 1
     state.deck[val] -= 1
     state.hand[val] += 1
     for x, i in state.bottom:
@@ -308,7 +308,7 @@ def ancient_wastes(state):
     return state.choose_ancient(cards.wastes)
 
 def ancient_exped(state):
-    return state.choose_ancient(cards.expedition)
+    return state.choose_ancient(cards.exped)
 
 def ancient_egg(state):
     return state.choose_ancient(cards.egg)
